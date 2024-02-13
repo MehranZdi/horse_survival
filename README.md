@@ -172,7 +172,7 @@ model_result = pd.DataFrame(eval_metrics.values(), index=eval_metrics.keys(), co
 ```
 The result is:
 
-![Evaluation result]()
+![Evaluation result](https://github.com/MehranZdi/horse_survival/blob/main/evaluation_result.png)
 
 ### Confusion Matrix
 And last but not least, the confusion matrix is a crucial part of each machine learning model to get information about the evaluation metrics. First, we have implemented a function to extract the best classifier out of all classifiers we have, based on all evaluation metrics. And then a confusion matrix has been plotted.
@@ -194,4 +194,4 @@ Confusion matrix plot:
 ```python
 ConfusionMatrixDisplay.from_estimator(best_clf, x_test_transformed, y_test, cmap=plt.cm.Blues)
 ```
-![Confusion Matrix]()
+![Confusion Matrix](https://github.com/MehranZdi/horse_survival/blob/main/confusion_matrix.png)
