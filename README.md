@@ -118,9 +118,59 @@ feature_names = num_ord_feature_names + nom_feature_names
 x_train_transformed = pd.DataFrame(x_train_transformed, columns=feature_names)
 x_test_transformed = pd.DataFrame(x_test_transformed, columns=feature_names)
 ```
-### Defining the classifier
-#### Classifier Comparator Function
-We want to make five objects of SVC() and make a comparison between them. For each classifier, we have used different hyperparameters, C and Gamma. The following function tries to generate random values for C and Gamma. Note that it has been considered that the generated values have an increasing trend.
+### Defining SVM classifiers
+#### Classifier Comparator Funciton with Different Kernels
+At first, we're going to use SVM classifiers with different kernel, C values, Gamma and Degree(for 'rbf' and 'poly' kernels). The function below make classifires and store the result in a dictionary.
+```python
+def kernel_comparator(clf_num, c, kernel, x_train, y_train, x_test, y_test, degree=-1, gamma=-1):
+    history = dict()
+    if gamma > 0 and degree < 0 :
+        clf = SVC(C = c, kernel=kernel, gamma=gamma)
+        degree='None'
+
+    elif degree > 0 and gamma >0: 
+        clf = SVC(C = c, kernel=kernel, degree=degree, gamma=gamma)
+    
+    else: 
+        clf = SVC(C = c, kernel=kernel)
+        degree = 'None'
+        gamma = 'None'
+    
+    clf.fit(x_train, y_train)
+    train_acc = clf.score(x_train, y_train)
+    test_acc = clf.score(x_test, y_test)
+    y_pred = clf.predict(x_test)
+    precision = precision_score(y_test, y_pred, average='weighted')
+    recall = recall_score(y_test, y_pred, average='weighted')
+    history[clf_num] = [kernel, train_acc, test_acc, precision, recall, c, degree, gamma]
+    return history
+```
+Turn to call the function:
+```python
+clf0 = kernel_comparator(0, 25, 'linear', x_train_transformed, y_train, x_test_transformed, y_test)
+clf1 = kernel_comparator(1, 1, 'poly', x_train_transformed, y_train, x_test_transformed, y_test, degree=3, gamma=30)
+clf2 = kernel_comparator(2, 35, 'poly', x_train_transformed, y_train, x_test_transformed, y_test, degree=4, gamma=5)
+clf3 = kernel_comparator(3, 15, 'rbf', x_train_transformed, y_train, x_test_transformed, y_test, gamma=20)
+clf4 = kernel_comparator(4, 2, 'rbf', x_train_transformed, y_train, x_test_transformed, y_test, gamma=0.5)
+```
+And the result, after running the following code will be:
+```python
+evals_list = [clf0, clf1, clf2, clf3, clf4]
+histories = {}
+counter = 0
+for dict in evals_list:
+    for key in dict.keys():
+        clf_num = 'clf' + ' ' + str(key)
+        histories[clf_num] = dict[key]
+        counter += 1
+
+model_result = pd.DataFrame(histories.values(), index=histories.keys(), columns=['kernel', 'train_acc', 'test_acc', 'precision', 'recall', 'c', 'degree', 'gamma'])
+model_result
+```
+![Evaluation result for different kernels](https://github.com/MehranZdi/horse_survival/blob/main/evaluation_result_dff_kernels.png)
+
+#### Classifier Comparator Function with Linear Kernel and Different C Values
+We want to make five objects of SVC() with linear kernel and make a comparison between them. For each classifier, we have used different parameter C. The following function tries to generate random values for C. Note that it has been considered that the generated values have an increasing trend.
 ```python
 def make_random(prev_num=0):
     flag = True
@@ -135,13 +185,12 @@ def make_random(prev_num=0):
 The following function, ‘comparator’, takes datasets and applies SVC() on them and saves the results in a python dictionary called ‘histories’ which we need further.
 
 ```python
-def comparator(x_train, y_train, x_test, y_test):
-    histories = dict()
-    c = gamma = 0
+def linear_comparator(x_train, y_train, x_test, y_test):
+    histories = {}
+    c = 0
     for i in range(5):
         c = make_random(c)
-        gamma = make_random(gamma)
-        clf = SVC(C = c, kernel='linear', gamma=gamma)
+        clf = SVC(C = c, kernel='linear')
         clf.fit(x_train, y_train)
         train_acc = clf.score(x_train, y_train)
         test_acc = clf.score(x_test, y_test)
@@ -149,18 +198,18 @@ def comparator(x_train, y_train, x_test, y_test):
         precision = precision_score(y_test, y_pred, average='weighted')
         recall = recall_score(y_test, y_pred, average='weighted')
 
-        histories[f'clf{i}'] = [train_acc, test_acc, precision, recall, c, gamma, clf]
+        histories[f'clf{i}'] = [train_acc, test_acc, precision, recall, c, clf]
     return histories
 ```
 ### Show the evaluation results
 ```python
 def show_eval_metrics():
     counter = 0
-    metrics = dict()
+    metrics = {}
     for item in score_history:
         clf_num = 'clf' + ' ' + str(counter)
         metrics[clf_num] = [score_history[item][0], score_history[item][1], score_history[item][2], score_history[item][3]]
-        print(f'{clf_num}:\nTrain accuracy: {score_history[item][0]},\nTest accuracy: {score_history[item][1]}\nPrecision: {score_history[item][2]}\nRecall: {score_history[item][3]} \nc: {score_history[item][4]}\ngamma: {score_history[item][5]}')
+        print(f'{clf_num}:\nTrain accuracy: {score_history[item][0]},\nTest accuracy: {score_history[item][1]}\nPrecision: {score_history[item][2]}\nRecall: {score_history[item][3]} \nc: {score_history[item][4]}')
         print('-----------------------------------------------------')
         counter += 1
 
@@ -172,7 +221,7 @@ model_result = pd.DataFrame(eval_metrics.values(), index=eval_metrics.keys(), co
 ```
 The result is:
 
-![Evaluation result](https://github.com/MehranZdi/horse_survival/blob/main/evaluation_result.png)
+![Linear Evaluation result](https://github.com/MehranZdi/horse_survival/blob/main/linear_evaluation_result.png)
 
 ### Confusion Matrix
 And last but not least, the confusion matrix is a crucial part of each machine learning model to get information about the evaluation metrics. First, we have implemented a function to extract the best classifier out of all classifiers we have, based on all evaluation metrics. And then a confusion matrix has been plotted.
